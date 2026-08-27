@@ -6,7 +6,7 @@ RANLIB    ?= ranlib
 SHELL     := /bin/sh
 
 INCFLAGS  = -I.. -I../include
-CFLAGS    = -fno-common -march=x86-64 -std=gnu99 -O2 -ggdb3 -pipe \
+CFLAGS    = -fcommon -march=x86-64 -std=gnu99 -fgnu89-inline -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=return-mismatch -O2 -ggdb3 -pipe \
             -w -fPIC $(INCFLAGS)
 
 DEPFLAGS  = -MMD -MP
