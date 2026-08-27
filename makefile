@@ -7,7 +7,7 @@ MV         ?= mv
 SHELL      := /bin/sh
 
 INCFLAGS  = -I. -I./include -I/usr/local/include
-CFLAGS    = -fcommon -march=x86-64 -std=gnu99 -O1 -pipe -w -Wextra \
+CFLAGS    = -fcommon -march=x86-64 -std=gnu99 -fgnu89-inline -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=return-mismatch -O1 -pipe -w -Wextra \
             -ggdb3 -fno-omit-frame-pointer -fPIC -D_NEW_DECODE $(INCFLAGS)
 
 PROG       = ./gmsv
@@ -25,7 +25,7 @@ OBJ        = $(SRC:.c=.o)
 DEPS       = $(SRC:.c=.d)
 
 SQL        = -lmysqlclient -lz
-LDFLAGS    = -Wl,-z,muldefs -Wl,--unresolved-symbols=ignore-all -L/usr/local/lib $(SQL) -lm -lpthread -ldl
+LDFLAGS    = -L/usr/local/lib $(SQL) -lm -lpthread -ldl
 
 .PHONY: all clean distclean dos2unix chmod depend data
 
@@ -33,7 +33,7 @@ all: $(PROG)
 
 $(PROG): $(LIBS) $(OBJ) 
 	@echo "執行連結 $(PROG)..."
-	@$(CC) $(CFLAGS) -o $(PROG) $(OBJ) $(LIBS) $(LDFLAGS) -Wl,--allow-shlib-undefined
+	@$(CC) $(CFLAGS) -o $(PROG) $(OBJ) $(LIBS) $(LDFLAGS)
 	@echo "編譯完成 : $(PROG) "
 
 %.o: %.c
