@@ -1,37 +1,42 @@
-# Issue tracker: GitHub
+# Issue tracker：GitHub
 
-Issues and specs for this repository live in the GitHub Issues for `CoffeeTW/StoneAge-Online-Code`. Use the `gh` CLI for all operations.
+本 repository 的 Issue 與規格存放於 `CoffeeTW/StoneAge-Online-Code` 的 GitHub Issues。所有操作使用 `gh` CLI。
 
-## Conventions
+## 操作慣例
 
-- **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.
-- **Read an issue**: `gh issue view <number> --comments`, including its labels.
-- **List issues**: `gh issue list --state open --json number,title,body,labels,comments` with appropriate label and state filters.
-- **Comment on an issue**: `gh issue comment <number> --body "..."`.
-- **Apply or remove labels**: `gh issue edit <number> --add-label "..."` or `--remove-label "..."`.
-- **Close an issue**: `gh issue close <number> --comment "..."`.
+- 建立 Issue：`gh issue create --title "..." --body "..."`。多行內容應使用 heredoc。
+- 讀取 Issue：`gh issue view <number> --comments`，並一併檢查 labels。
+- 列出 Issue：使用 `gh issue list --state open --json number,title,body,labels,comments`，依需求加入 label 與 state 篩選條件。
+- 留言：`gh issue comment <number> --body "..."`。
+- 套用 label：`gh issue edit <number> --add-label "..."`。
+- 移除 label：`gh issue edit <number> --remove-label "..."`。
+- 關閉 Issue：`gh issue close <number> --comment "..."`。
 
-Infer the repository from `git remote -v`; `gh` does this automatically when run inside this checkout.
+在本機 checkout 內執行時，由 `git remote -v` 判定 repository；`gh` 通常會自動完成此判定。
 
-## Pull requests as a triage surface
+## Pull Request 是否納入 triage
 
-**PRs as a request surface: no.** Set this to `yes` only if the repository later decides to treat external pull requests as feature requests.
+**PR 作為需求來源：否。**
 
-GitHub shares one number space across issues and pull requests. When a bare reference such as `#42` is ambiguous, try `gh pr view 42` and then fall back to `gh issue view 42`.
+只有未來專案明確決定將外部 Pull Request 視為功能需求時，才將此設定改為「是」。
 
-## Skill operations
+GitHub Issues 與 Pull Requests 共用編號空間。當 `#42` 之類的引用無法判定類型時，先執行 `gh pr view 42`，失敗後再執行 `gh issue view 42`。
 
-- When a skill says **publish to the issue tracker**, create a GitHub issue.
-- When a skill says **fetch the relevant ticket**, run `gh issue view <number> --comments`.
-- Do not modify, label, close, or create issues unless the active user request authorizes that write.
+## Skill 操作規則
 
-## Wayfinding operations
+- Skill 要求「publish to the issue tracker」時，建立 GitHub Issue。
+- Skill 要求「fetch the relevant ticket」時，執行 `gh issue view <number> --comments`。
+- 除非目前的使用者要求已授權寫入，否則不得建立、修改、加上 label、關閉 Issue 或留言。
 
-When `/wayfinder` is used:
+## Wayfinder 操作
 
-- The **map** is one GitHub issue labelled `wayfinder:map`.
-- Child tickets are linked as GitHub sub-issues when available. Otherwise, put them in the map's task list and add `Part of #<map>` to each child.
-- Child labels use `wayfinder:<type>`, where the type is `research`, `prototype`, `grilling`, or `task`.
-- Represent blockers with GitHub's native issue dependencies. If unavailable, add `Blocked by: #<n>` at the top of the child issue.
-- Claim a ticket with `gh issue edit <number> --add-assignee @me`; this is a write and requires authorization from the active request.
-- Resolve a ticket by commenting with the result, closing it, and updating the map's decisions when the active request authorizes those writes.
+使用 `/wayfinder` 時：
+
+- Map 是一個帶有 `wayfinder:map` label 的 GitHub Issue。
+- Child ticket 優先使用 GitHub sub-issue 連結至 map。
+- 如果 repository 無法使用 sub-issue，則將 child 加入 map 的 task list，並在 child 內容開頭加入 `Part of #<map>`。
+- Child label 使用 `wayfinder:<type>`，其中 type 為 `research`、`prototype`、`grilling` 或 `task`。
+- Blocker 優先使用 GitHub 原生 Issue dependencies 表示。
+- 如果無法使用 dependencies，則在 child 內容開頭加入 `Blocked by: #<n>`。
+- Claim ticket 使用 `gh issue edit <number> --add-assignee @me`；此操作屬於寫入，必須獲得目前要求授權。
+- Resolve ticket 包含留下結果留言、關閉 Issue，以及更新 map 的決策紀錄；這些操作同樣必須獲得目前要求授權。

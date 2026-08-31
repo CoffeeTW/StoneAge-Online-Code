@@ -104,35 +104,35 @@ mainloop 先生成 NPC、註冊 SIGUSR1／SIGUSR2，再初始化 Warp Point、�
 3. netloop_faster：接受連線、讀取／派送封包、輸出 write buffer。
 4. NPC_generateLoop(0)：生成或更新 NPC。
 5. BATTLE_Loop：推進所有使用中的 Battle 狀態機。
-6. CHAR_Loop：處理玩家與其他 Character 的走動及 loop callback。
+6. CHAR_Loop：處理玩家角色與其他 Character 的走動及 loop callback。
 7. PETMAIL_proc、family_proc、chardatasavecheck。
 8. 啟用功能的 Angel 與效果檢查。
 9. ShutdownProc。
 
 **推論**
 
-程式雖連結 pthread 且 Connection 內有 mutex，但目前原始碼沒有 pthread_create；核心遊戲邏輯看起來由單一 mainloop 依序驅動。這降低一般資料競爭，但使某個模組的長時間操作可阻塞整個世界迴圈。
+核心遊戲邏輯在同一個 `while(1)` 中依序呼叫 `netloop_faster`、`NPC_generateLoop`、`BATTLE_Loop`、`CHAR_Loop` 與保存／關機處理（main.c:147-239）。建置仍連結 pthread，`CONNECT` 與 `servstate` 也保留 mutex（makefile:27-28、net.c:90-100、net.c:255-261），但對目前 `.c`／`.h` 的 repository-wide 靜態搜尋沒有找到 `pthread_create`。因此「核心遊戲邏輯由單一 mainloop 驅動」是推論，不等同已證明整個程序在所有建置組態下永遠只有一個 thread。若此推論成立，某個模組的長時間操作可阻塞整個世界迴圈。
 
 ## 3. 核心模組與目錄責任
 
 **已確認**
 
-| 位置 | 主要責任 | 代表檔案 |
+| 位置 | 主要責任 | 代表性證據 |
 |---|---|---|
-| 根目錄 | 程序入口、初始化、設定、網路、協定接線、時間、Object、log 與共用工具 | main.c、init.c、configfile.c、net.c、callfromcli.c、callfromac.c、object.c、function.c |
-| char/ | 通用 Character 模型，以及玩家、Pet、Enemy、Party、Encounter、Family、Trade、Chat、移動、道具欄與存檔 | char_base.c、char.c、char_item.c、char_walk.c、pet.c、enemy.c、encount.c、family.c |
-| npc/ | NPC template／create／generate 基礎設施，以及商店、傳送、銀行、任務、Family、競賽等具體 NPC 行為 | npctemplate.c、npccreate.c、npcgen.c、readnpc.c、npc_*.c |
-| map/ | Floor 與 map image data 載入、座標檢查、tile／object layer、座標物件鏈結、Warp Point | readmap.c、map_deal.c、map_util.c、map_warppoint.c |
-| item/ | Item Definition、Item Instance 池、資料解析、使用／裝卸／掉落事件、合成與交易 | item.c、item_event.c、item_gen.c、item_trade.c |
-| battle/ | Battle 陣列與狀態機、命令解析、行動結算、AI、Battle Item／Magic、Pet Skill、Profession Skill | battle.c、battle_command.c、battle_event.c、battle_magic.c、battle_item.c |
-| magic/ | Magic Definition 載入、ID 查找、函式派送，以及場上／場外魔法效果 | magic_base.c、magic.c、magic_field.c |
-| include/ | 上述模組的公開型別、enum、巨集、全域變數宣告與函式介面 | char_base.h、battle.h、item.h、magic_base.h、net.h、readmap.h |
+| 根目錄 | 程序入口、初始化、設定、網路、協定接線、時間、Object、log 與共用工具 | main.c:52-98、init.c:122-704、configfile.c:28-319、net.c:76-261、callfromcli.c:67-205、callfromac.c:55-122、object.c:20-38、function.c:700-742、log.c:194-201 |
+| char/ | 通用 Character 模型，以及玩家角色、Pet、Enemy、Party、Encounter、Family、Trade、Chat、移動、道具欄與存檔 | include/char_base.h:371-1497、char/char_base.c:1722-1750、char/char.c:1005-1524、char/char.c:4483-4546、char/char_party.c:29-97、char/encount.c:57-104、char/family.c:183-215、char/trade.c:75-181、char/char_talk.c:1032-1060 |
+| npc/ | NPC template／create／generate 基礎設施，以及商店、傳送、銀行等具體 NPC 行為 | npc/readnpc.c:10-19、npc/npctemplate.c:998-1033、npc/npccreate.c:434-465、npc/npcgen.c:344-370、npc/npc_itemshop.c:95-120、npc/npc_warp.c:25-76、npc/npc_bankman.c:53-114 |
+| map/ | Floor 與 map image data 載入、座標檢查、tile／object layer、座標物件鏈結、Warp Point | map/readmap.c:623-716、map/readmap.c:938-990、map/readmap.c:1146-1205、map/map_warppoint.c:34-81、map/map_warppoint.c:188-260 |
+| item/ | Item Definition、Item Instance 池、資料解析、使用／裝卸／掉落事件與合成 | item/item.c:416-527、item/item.c:1016-1065、item/item.c:1638-1662、item/item_event.c:41-168、item/item_gen.c:163-299 |
+| battle/ | Battle 陣列與狀態機、命令解析、行動結算、AI、Battle Item／Magic、Pet Skill、Profession Skill | include/battle.h:415-497、battle/battle.c:3901-4028、battle/battle_command.c:609-1026、battle/battle_event.c:2555-2937、battle/battle_magic.c:87-229、battle/battle_item.c:17-237 |
+| magic/ | Magic Definition 載入、ID 查找、函式派送，以及場上／場外魔法效果 | magic/magic_base.c:25-71、magic/magic_base.c:137-180、magic/magic_base.c:400-439、magic/magic.c:26-100、magic/magic_field.c:20-119 |
+| include/ | 上述模組共用的型別、enum、巨集、全域變數宣告與函式介面 | include/char_base.h:1385-1503、include/battle.h:415-497、include/item.h:292-313、include/magic_base.h:8-61、include/net.h:30-53、include/readmap.h:6-27 |
 
 Makefile 將 char、npc、map、item、magic、battle 各自編成靜態庫，再與根目錄物件檔連結成 gmsv（makefile:12-31）。
 
 **推論**
 
-目錄是建置邊界，不是嚴格的架構邊界。include graph 顯示 char、battle、item、magic、npc 間存在雙向依賴；例如 magic 直接讀 Character、Item 與 Battle，而 battle 也直接使用 Magic、Item、NPC 與 Map。
+代表性 `#include` 敘述確認 `magic` 直接依賴 Character、Item 與 Battle（magic/magic.c:5-19）；`battle` 直接依賴 Character、Map、Magic、NPC，並在 feature flag 下依賴 Item（battle/battle.c:5-31）；`item`、`char` 與 `npc` 也跨目錄引用其他領域 header（item/item_event.c:4-38、char/char_walk.c:6-21、npc/npcgen.c:4-14）。由這些雙向引用推論，目錄是建置邊界，不是嚴格的架構邊界。
 
 ## 4. char／battle／item／magic 關係
 
@@ -195,7 +195,7 @@ MAGIC_Use 的典型路徑是：
     Char 是狀態中心
       ├──用索引持有 Item Instance
       ├──用 work slots 連到 Battle 與待執行命令
-      └──同時代表 Player／Pet／Enemy／NPC
+      └──同時代表 Player Character／Pet／Enemy／NPC
 
     Battle 是協調器
       ├──以 charaindex 組成兩側
@@ -231,7 +231,7 @@ LSSPROTO write function 最終只把編碼後訊息放入 Connection write buffe
 
 lssproto_InitServer 建立 protocol 共用工作區（lssproto_serv.c:17-45）。lssproto_ServerDispatchMessage 進行 decode、依 SEPARATOR 分割、讀取功能 ID、解碼參數、比對加總 checksum，再呼叫 lssproto_*_recv application handler（lssproto_serv.c:63-100；後續 case 採相同模式）。
 
-application handler 集中在 callfromcli.c，涵蓋登入、建立角色、移動、Map、Item、Pet、Talk、Event、Battle command、商店、Family、Trade 與其他 Client 操作。
+application handler 集中在 callfromcli.c；登入與角色管理入口位於 callfromcli.c:67-398，移動、Item、Pet、Talk、Map 與 Event 等入口位於 callfromcli.c:406-967，Battle 與後續視窗、社交及 feature-specific 入口位於 callfromcli.c:1153-2028。
 
     socket bytes
         → Connection read buffer
@@ -324,7 +324,7 @@ saacproto_ClientDispatchMessage 分割訊息、取得 funcname，再以 strcmp �
 
 | 狀態 | 位置 | 關係與生命週期 |
 |---|---|---|
-| CHAR_chara | char/char_base.c:26-31 | 所有 Character 的全域 pool；容量在 init 時由玩家、Pet 與 other character 上限決定 |
+| CHAR_chara | char/char_base.c:26-31、char/char_base.c:1722-1750 | 所有 Character 的全域 pool；容量在 init 時由玩家角色、Pet 與 other Character 上限決定 |
 | BattleArray／BATTLE_battlenum | battle/battle.c:43-45 | 所有 Battle 的全域 pool；BATTLE_ENTRY 以 charaindex 回指 CHAR_chara |
 | ITEM_item | item/item.c:20-23 | 所有使用中 Item Instance 的私有全域 pool；Character 保存其索引 |
 | ITEM_tbl | item/item.c:416-418 | Item Definition table；依 feature flag 可為固定陣列或動態配置 |
@@ -353,14 +353,14 @@ defaultConfig 只先設定程式名稱與預設 setup.cf（configfile.c:1834-185
 
 每行採 key=value；空白、註解與空行會被處理，再依 readconf table 把值寫入全域 Config。載入完成後 lastConfig 將多個相對資料路徑加上 topdir，包括 mapdir、maptilefile、battlemapfile、itemfile、invfile、appearfile、effectfile、quizfile、title、protocol log 與 npcdir（configfile.c:1861-1921、configfile.c:1992-2063）。
 
-核心設定類別：
+核心設定類別（分類依 `Config` 欄位與 `readconf` key table）：
 
-- AC：acserv、acservport、acpasswd、gameservname／ID。
-- Client listener：port、reuseaddr、socket buffer。
-- 容量：fdnum、petcharnum、otherscharnum、objnum、itemnum、battlenum。
-- 路徑：topdir、mapdir、maptilefile、itemset、npcdir、各種規則資料檔與 log。
-- loop／network：one loop time、CA／CD send interval、AC write size、允許錯誤數。
-- 大量 feature-specific 參數，其存在與 version.h 的編譯旗標一致。
+- AC：`acserv`、`acservport`、`acpasswd`、`gameservname`／`gameservid`（configfile.c:36-45、configfile.c:326-334）。
+- Client listener／connection：`port`、`reuseaddr`、`nodelay`、`fdnum`（configfile.c:47-57、configfile.c:336-347）。
+- 容量：`fdnum`、`petnum`、`othercharnum`、`objnum`、`itemnum`、`battlenum`（configfile.c:57-63、configfile.c:347-354）。
+- 路徑：`topdir`、Map、Item、NPC、規則資料、log 與 store 路徑（configfile.c:64-98、configfile.c:355-409）。
+- loop／network：walk、CA／CD、Character Save、one-loop interval、protocol error、AC write size（configfile.c:103-132、configfile.c:415-435）。
+- feature-specific 參數：`Config` 與 `readconf` 內多處受 `version.h` 巨集控制，例如 Profession Skill（configfile.c:135-140、configfile.c:437-439）。
 
 ### 8.2 Game Data 載入依賴
 
@@ -397,7 +397,7 @@ defaultConfig 只先設定程式名稱與預設 setup.cf（configfile.c:1834-185
 
 **已確認**
 
-根 Makefile 使用 GCC／GNU99，並要求 POSIX shell 與一般 Unix 工具。主要旗標包含：
+根 makefile 宣告 `CC`、`RM`、`AR`、`RANLIB`、`SED`、`MV` 並指定 `/bin/sh`（makefile:1-7）。根建置規則實際使用 `CC` 進行編譯與連結、使用 `RM` 清理（makefile:34-41、makefile:59-67）；各子目錄 makefile 實際使用 `AR` 與 `RANLIB` 建立靜態庫，例如 char/makefile:25-40。`SED` 與 `MV` 僅在根 makefile:5-6 宣告；repository-wide Makefile 靜態搜尋未找到對 `$(SED)` 或 `$(MV)` 的呼叫。編譯模式為 GNU99（makefile:9-11）。主要旗標包含：
 
 - -fcommon
 - -march=x86-64
@@ -427,20 +427,20 @@ defaultConfig 只先設定程式名稱與預設 setup.cf（configfile.c:1834-185
 
 最低執行前置條件：
 
-- 可用的 setup.cf 或 setup.cf.<hostname>。
-- 設定指向的全部 Game Data。
-- 可 bind 的 Client listener port。
-- 可連線且協定相容的 Account Server。
-- 可寫入的 log／store 位置。
+- 可讀取的 `setup.cf` 或 `setup.cf.<短 hostname>`；預設檔名與 fallback 流程位於 configfile.c:1834-1850、configfile.c:1960-1990。
+- 設定指向的核心 Game Data；Item、Character 規則、Magic、Map 與 NPC 載入失敗會走初始化失敗路徑（init.c:459-583、init.c:634-641）。
+- 可 bind 的 Client listener port；程式會持續重試直到成功（init.c:445-456）。
+- 可連線且協定相容的 Account Server；連線或 SAACPROTO 初始化失敗會中止 init，登入回覆失敗會結束程序（init.c:647-674、callfromac.c:55-64）。
+- 可讀取的 log 設定；`initLog` 失敗會中止 init（init.c:688-704）。Log／store 的實際寫入權限需求仍取決於 setup.cf 與啟用功能（configfile.c:86-98、configfile.c:398-409）。
 
-目前 repository 不包含 setup.cf、完整 data directory、gmsv binary、Client 或 Account Server，因此本次未宣稱可從乾淨 checkout 直接啟動。
+**推論（repository 檔案樹靜態檢查）**：原始碼明確預期 `setup.cf`（configfile.c:1848-1850）、多組 Game Data（init.c:469-641）、建置輸出 `./gmsv`（makefile:13-36）與外部 Account Server（init.c:647-683）；但目前 `git ls-files` 沒有列出 `setup.cf`、完整的頂層 Game Data 目錄、`gmsv` binary、Client 實作或 Account Server 實作。檔案不存在本身無法引用不存在的「檔案:行號」，因此此結論明確保留為檔案樹推論；本文件不宣稱乾淨 checkout 可直接啟動。
 
-Makefile 沒有 test target；repository 也沒有可辨識的自動測試或 CI 設定。README.md 只有專案標題，未提供環境建置或資料版本說明。
+**已確認**：根 makefile 的完整 target 區段沒有 test target（makefile:30-68），README.md 只有標題（README.md:1）。**推論（repository 檔案樹靜態檢查）**：目前沒有可辨識的自動測試或 CI 設定，也沒有足以重現資料版本與啟動環境的文件。
 
 **推論**
 
-- 目標環境是 Linux／類 Unix；程式使用 getopt、nice、usleep、POSIX socket 與 /bin/sh。
-- mysqlclient 雖被連結，但本 repository 的 .c／.h 沒有 MySQL API 參照；它可能是歷史依賴或外部建置慣例，仍需實際 link 環境驗證。
+- 目標環境是 Linux／類 Unix；Makefile 指定 `/bin/sh` 與 `/usr/local` include／library path，程式使用 getopt、nice、usleep 與 POSIX socket（makefile:7-10、makefile:27-28、init.c:45-100、main.c:147-154）。
+- mysqlclient 與 zlib 明確列在連結參數（makefile:27-28），但對目前 `.c`／`.h` 的 repository-wide 靜態搜尋沒有找到 MySQL API 參照；mysqlclient 可能是歷史依賴或外部建置慣例，仍需實際 link 環境驗證。
 
 ## 10. 高耦合區域
 
@@ -478,7 +478,7 @@ NPC、Character、Item 與 Magic 的資料可保存函式名稱，執行時由�
 
 **已確認**
 
-目前 include/version.h 靜態掃描有 386 個啟用中的底線 feature define。這些旗標改變 struct 欄位、enum、資料鍵、函式表與協定 handler；例如 _PROFESSION_SKILL、_CHAR_POOLITEM、_CHAR_POOLPET 與 _ATTACK_MAGIC。
+以 `^\s*#define\s+_[A-Za-z0-9_]+` 對 include/version.h:1-544 靜態計數，可確認目前有 386 個啟用中的底線 define；代表例包含 `_ATTACK_MAGIC`、`_PROFESSION_SKILL`、`_CHAR_POOLITEM` 與 `_CHAR_POOLPET`（include/version.h:72、include/version.h:297、include/version.h:306、include/version.h:361）。條件編譯會改變 Character 欄位、Magic enum、設定 key 與部分 LSSPROTO handler（include/char_base.h:1402-1407、include/magic_base.h:26-43、configfile.c:437-439、include/lssproto_serv.h:146-171、lssproto_serv.c:1337-1432）。
 
 **推論**
 
@@ -551,17 +551,18 @@ version.h 不是單純功能清單，而是此 binary 的資料與協定 schema�
 ### R12. 輪詢式單主迴圈的延遲傳播
 
 - **已確認**：核心模組依序在 mainloop 執行；netloop_faster 對 listening fd 及被輪到的 connection 使用零 timeout select（main.c:147-239、net.c:2089-2106、net.c:2480-2505）。
-- **推論**：昂貴 NPC、Battle、Character loop 或同步檔案／AC 操作會增加所有玩家看到的 tick 延遲；connection 數量上升也會增加輪詢等待時間。
+- **推論**：昂貴 NPC、Battle、Character loop 或同步檔案／AC 操作會增加所有 Client 感受到的 tick 延遲；connection 數量上升也會增加輪詢等待時間。
 
 ### R13. 註解與資料編碼不明
 
-- **已確認**：目前工具以一般 UTF-8／系統預設解碼時，大量中文／日文註解呈現 mojibake；原始識別字仍可讀。
+- **已確認（本次工具輸出觀察）**：以目前工具的預設文字解碼讀取時，代表性註解呈現 mojibake，而同一行的原始識別字仍可讀（main.c:23、init.c:34、include/version.h:72）。
 - **未知**：原始檔預期是 Big5、Shift-JIS、其他 code page 或混合編碼。
 - **影響**：未先建立 encoding 規則就重存檔案，可能造成大範圍非功能性 diff 或資料內容損壞。
 
 ### R14. 缺少可重現環境與自動驗證
 
-- **已確認**：repository 沒有 setup.cf、完整 Game Data、自動測試、CI 或可執行環境文件；README.md 只有標題。
+- **已確認**：程式需要 setup.cf、核心 Game Data、Client listener、Account Server 與 log 設定才能完成初始化（configfile.c:1834-1850、init.c:445-704）；根 makefile 沒有 test target（makefile:30-68），README.md 只有標題（README.md:1）。
+- **推論（repository 檔案樹靜態檢查）**：tracked files 沒有包含上述完整執行資產、可辨識的自動測試／CI 或可執行環境文件；由於缺少項目無法提供其自身行號，此負向結論以檔案樹檢查為依據。
 - **推論**：目前無法由 repository 單獨重現正式 binary、啟動成功或 protocol 相容性。
 
 ## 12. 尚未確認的未知事項

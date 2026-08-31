@@ -2,8 +2,12 @@
 
 ### Issue tracker
 
-Issues and specs are tracked in `CoffeeTW/StoneAge-Online-Code` GitHub Issues. See `docs/agents/issue-tracker.md`.
+Issue 與規格追蹤於 `CoffeeTW/StoneAge-Online-Code` 的 GitHub Issues。詳見 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+Triage 使用五個預設標籤：`needs-triage`、`needs-info`、`ready-for-agent`、`ready-for-human`、`wontfix`。詳見 `docs/agents/triage-labels.md`。
 
 ### Domain docs
 
-This is a single-context repository. Read the root `CONTEXT.md` and relevant ADRs under `docs/adr/` when they exist. See `docs/agents/domain.md`.
+本專案採用 single-context 文件布局。探索或修改專案前，應閱讀根目錄的 `CONTEXT.md`，以及 `docs/adr/` 中與工作範圍相關的 ADR。詳見 `docs/agents/domain.md`。

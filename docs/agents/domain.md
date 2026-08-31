@@ -1,18 +1,20 @@
-# Domain docs
+# Domain 文件
 
-How engineering skills should consume this repository's domain documentation when exploring the codebase.
+本文件說明工程 skills 在探索 codebase 時，應如何使用本專案的 domain 文件。
 
-## Before exploring, read these
+## 開始探索前
 
-- `CONTEXT.md` at the repository root.
-- `CONTEXT-MAP.md` at the repository root if it exists; read each referenced context relevant to the task.
-- ADRs under `docs/adr/` that affect the area being changed.
+依序閱讀：
 
-If any of these files do not exist, proceed silently. Do not flag their absence or suggest creating them before they are needed. Domain-modeling skills create them lazily when terminology or architectural decisions are actually resolved.
+- Repository 根目錄的 `CONTEXT.md`。
+- 如果根目錄存在 `CONTEXT-MAP.md`，閱讀其中與目前工作相關的 context。
+- `docs/adr/` 中影響目前工作範圍的 ADR。
 
-## Layout
+如果上述檔案不存在，應直接繼續，不需將缺少檔案視為錯誤，也不應在實際需要前建議預先建立。Domain modeling skills 會在術語或架構決策確定後，按需建立文件。
 
-This is a **single-context** repository:
+## 文件布局
+
+本專案採用 single-context 布局：
 
 ```text
 /
@@ -20,19 +22,20 @@ This is a **single-context** repository:
 |-- docs/
 |   |-- agents/
 |   |   |-- domain.md
-|   |   `-- issue-tracker.md
+|   |   |-- issue-tracker.md
+|   |   `-- triage-labels.md
 |   `-- adr/
-`-- game server source files and domain directories
+`-- 遊戲伺服器原始碼與 domain 目錄
 ```
 
-If the repository later becomes a genuine multi-context monorepo, add a root `CONTEXT-MAP.md` and update this file before assuming per-context documentation.
+如果未來 repository 成為真正的 multi-context monorepo，應先新增根目錄 `CONTEXT-MAP.md` 並更新本文件，再採用各 context 獨立文件的假設。
 
-## Use the glossary's vocabulary
+## 使用 glossary 定義的詞彙
 
-When output names a domain concept in an issue title, refactor proposal, hypothesis, or test name, use the terminology defined in `CONTEXT.md`. Do not drift to synonyms the glossary explicitly avoids.
+當 Issue 標題、重構提案、假設或測試名稱提及 domain concept 時，應使用 `CONTEXT.md` 定義的術語，不應改用 glossary 明確避免的同義詞。
 
-If a needed concept is absent, reconsider whether the term belongs to the project. If it represents a real gap, record it for later domain modeling.
+如果需要的 concept 尚未出現在 glossary，應先確認它是否真的是本專案使用的概念。若確實代表 domain 缺口，則記錄並留待後續 domain modeling 處理。
 
-## Flag ADR conflicts
+## 標示 ADR 衝突
 
-If proposed work contradicts an existing ADR, surface the conflict explicitly instead of silently overriding the decision.
+如果提議的工作與既有 ADR 衝突，必須明確指出衝突，不得默默覆蓋既有決策。
